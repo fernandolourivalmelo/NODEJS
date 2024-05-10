@@ -19,7 +19,7 @@ if(route){
     req.params = {...routeParams.groups}
    
    //req.params = params
-   //console.log(req.params) 
+   console.log(req.params) 
 
    return route.handler(req,res)
 }

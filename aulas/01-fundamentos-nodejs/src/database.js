@@ -45,5 +45,14 @@ constructor(){
         }
     }
 
+    update (table,id,data){
+        const rowIndex = this.#database[table].findIndex(row => row.id ==id)
+        console.log(`index:`+rowIndex)
+        if(rowIndex>-1){           
+            this.#database[table][rowIndex] = {id,...data}
+            this.#persist()
+        }
+    }
+
   
 }
