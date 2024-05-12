@@ -1,5 +1,6 @@
 
 import fs from 'node:fs/promises'
+import { serialize } from 'node:v8'
 
 
 const dataBasePath = new URL('../db.json', import.meta.url)
@@ -20,10 +21,21 @@ constructor(){
         fs.writeFile(dataBasePath, JSON.stringify(this.#database))
     }
 
-    select(table){
-        const data = this.#database[table]??[]
+    select(table, search){
+        let data = this.#database[table]??[]
+        if(search){
+            data = data.filter(row=>{
+                //console.log(search)
+                return Object.entries(search).some(([key,value])=>{
+                  //  console.log(key)
+                  //  console.log(value)
 
-        return data
+                    return row[key].toLowerCase().includes(value.toLowerCase())
+                })
+            })
+
+        }
+        return data 
     }
 
     insert(table,data){
@@ -47,12 +59,14 @@ constructor(){
 
     update (table,id,data){
         const rowIndex = this.#database[table].findIndex(row => row.id ==id)
-        console.log(`index:`+rowIndex)
+        //console.log(`index:`+rowIndex)
         if(rowIndex>-1){           
             this.#database[table][rowIndex] = {id,...data}
             this.#persist()
         }
     }
+
+    pesquisa
 
   
 }
