@@ -18,7 +18,7 @@ fastify.get('/importarConvenios', async (request, reply) => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     
 
-    const queryConv = `SELECT top 10 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online  FROM [ASSOCIACAO].[cartao_beneficios].[dbo].[guia_de_servico] WHERE (ativo = 1) AND (cod_dentista = 0) AND  (Código_do_dentista = 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') and id_gds = '3'`
+    const queryConv = `SELECT top 10 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online  FROM [ASSOCIACAO].[cartao_beneficios].[dbo].[guia_de_servico] WHERE (ativo = 1) AND (cod_dentista = 0) AND  (Código_do_dentista = 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') and id_gds = '5'`
      console.log(queryConv)
     function addToFormData(form, attribute, value) {
         if (value !== null && value !== undefined && value !== '') {
@@ -157,18 +157,26 @@ fastify.get('/importarConvenios', async (request, reply) => {
          
           try {
             const response = await fetch(url, options);
-            // fetch(url, {
-            //   method:'POST',
-            //   body:formData,
-            //   headers:{Accept: 'application/json', Authorization: accessToken}
-            // })
-            // .then(response =>response.text())
-            // .then(result => {
-            //   console.log('Envio Realizado', result)
-            // })
-
+            fetch(url, {
+              method:'POST',
+              body:formData,
+              headers:{Accept: 'application/json', Authorization: accessToken}
+            })
             const data = await response.json();
-            console.log(data);
+
+            
+           const {id,slug} = data
+          // console.log('ID GDS =>' + id_gds );
+          // console.log('id Rede => ' + id);
+          // console.log('slug =>' + slug);
+          // console.log(data);
+
+          const queryUpdate = `UPDATE guia_de_servico SET id_rede =`+id+` , slug =`+slug+` WHERE (id_gds = `+id_gds+`)`
+          const result = await sequelizeGuia.query(queryUpdate);
+          console.log('Resultado =>' + result)
+          console.log('Query =>' + queryUpdate)
+
+
           } catch (error) {
             console.error(error);
           }
