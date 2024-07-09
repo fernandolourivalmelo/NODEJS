@@ -4,32 +4,41 @@ import fetch from 'node-fetch'
 import fs from 'fs';
 import { assoc} from './dbConfig.js';
 import { guia} from './dbConfigGuia.js';
+import { CharToNumber,NumberToChar } from '../function/numberToChar.js';
 
 const fastify = Fastify();//{logger:true}
 
  // and id_gds = 2
 
+ 
+
  fastify.get('/teste', async (req,reply)=>{
 
 
-      //const queryUpdate = `SELECT TOP (50) Cd_convênio, Razão_social FROM A_convenio`
-      //const queryUpdate = `SELECT TOP (50) [id_grupo_area], [fk_grupo], [fk_cd_da_area] FROM [grupo_area]`
-      const queryUpdate = `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'`
-      let result1 = (await assoc.request().query(queryUpdate)).recordset;
-      result1.forEach( banco =>{
-          console.log(banco.TABLE_NAME);
-          } 
-      )
+      // //const queryUpdate = `SELECT TOP (50) Cd_convênio, Razão_social FROM A_convenio`
+      // //const queryUpdate = `SELECT TOP (50) [id_grupo_area], [fk_grupo], [fk_cd_da_area] FROM [grupo_area]`
+      // const queryUpdate = `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'`
+      // let result1 = (await assoc.request().query(queryUpdate)).recordset;
+      // result1.forEach( banco =>{
+      //     console.log(banco.TABLE_NAME);
+      //     } 
+      // )
 
-      console.log(' ============= CONEXÃO BANCO GUIA ONLINE ============= ')
-      let result = (await pool2.query(queryUpdate)).recordset;
-      result.forEach( banco =>{
-          console.log(banco.TABLE_NAME);
-          } 
-      )
+      // console.log(' ============= CONEXÃO BANCO GUIA ONLINE ============= ')
+      // let result = (await pool2.query(queryUpdate)).recordset;
+      // result.forEach( banco =>{
+      //     console.log(banco.TABLE_NAME);
+      //     } 
+      // )
 
+ const matricula= 'hhzz'
+const texto= 'hhzz'
 
-  reply.status('200').send('conectado')
+  
+ console.log('NumberToChar ==>' + await NumberToChar(matricula))
+ console.log('CharToNumber ==>' + await CharToNumber(texto))
+ 
+  reply.status('200').send('Teste')
 
 
  })
@@ -67,18 +76,21 @@ fastify.get('/importarConvenios', async (request, reply) => {
         const{ id_gds, nome_parceiro, site,  desconto_em_folha, descricao_desconto, desconto, resume, ativo, start_date, type, caminho_logomarca, email, instagram, facebook, twitter, online, tabela_procedimentos } = convenio;       
 
         if (descricao_desconto !== null && descricao_desconto !== undefined && descricao_desconto !== '') {
-         // descricao = descricao_desconto
+          descricao = descricao_desconto
         }else{
           descricao = 'Entre em contato com o conveniado ABEPOM e saiba mais sobre os benefícios'
         }
         if (desconto_em_folha) {
           tipoPagamento =  ' Desconto em Folha'
+          beneficio = 'Conveniado com DEsconto em folha'
           
         }else{
           tipoPagamento = ' Pagamento no local'
+          beneficio = 'Pagamento no local com ' + desconto + ' % de desconto'
+
         }
 
-        beneficio = 'Apresente o cartão do Associado ABEPOM.' //+ tipoPagamento 
+       // beneficio = 'Apresente o cartão  ABEPOM e desfrute de mais este benefício de ser nosso Associado.' //+ tipoPagamento 
         //beneficio += descricao
 
 
@@ -87,6 +99,7 @@ fastify.get('/importarConvenios', async (request, reply) => {
         //addToFormData(formData, 'title',nome_parceiro)
         formData.append('title',nome_parceiro)
         addToFormData(formData, 'cover',fs.createReadStream(filePath))       
+        //addToFormData(formData, 'cover', 'PROVOCANDO ERRO')       
         console.log('Descrição do desconto =>' +  descricao_desconto)
         addToFormData(formData, 'benefit', beneficio) 
         addToFormData(formData, 'resume',  descricao) //mostra o texto quando passa o mouse na imagem 
@@ -99,10 +112,10 @@ fastify.get('/importarConvenios', async (request, reply) => {
         }else{
           addToFormData(formData, 'type','local')
         }
-        if (desconto_em_folha) {
-          addToFormData(formData, 'rescue_text','Desconto em Folha')
+        if (desconto_em_folha) { 
+          addToFormData(formData, 'rescue_text','Aproveite os benefícios deste conveniado com o Desconto em Folha.')
         }else{
-          addToFormData(formData, 'rescue_text','Pagamento no local')
+          addToFormData(formData, 'rescue_text','Apresente o cartão do Associado e solicite o desconto de ' + desconto + ' % com o pagamento no local.')
         }
        
         formData.append('invert_location_filter','false')             
@@ -137,17 +150,24 @@ fastify.get('/importarConvenios', async (request, reply) => {
             addToFormData(formData, 'categories[]', value)
           }
 
+          if (tabela_procedimentos){
+            const id_gds_Encriptado = await NumberToChar(''+id_gds+'')
+            descricao += '<br><br><a href="https://www.abepom.org.br/guiaonline/tabela_procedimentos_clube_vantagens.asp?key='+ id_gds_Encriptado+'" target="_blank" style="padding: 10px 20px; background-color: #87CEFA; text-decoration: none; border-radius: 20px;">Ver Tabela de Procedimentos e Valores</a>'  
+          }
+
           if (palavrasChave.length > 0) {
-           descricao += "<br><br><i>Confira alguns de nossos serviços:</i>"
+           descricao += '<br><br><i>Confira alguns de nossos serviços:</i>'
+           descricao += '<ul>'
           }
           for (const value of palavrasChave){
-            descricao += '<br>' + value  
+            descricao += '<li>' + value + '</li>'  
           }
-                 
+          
+          if (palavrasChave.length > 0) {
+            descricao += '</ul>'
+           }
 
-          if (tabela_procedimentos){
-            descricao += '<br><br><a href="https://www.abepom.org.br/guiaonline/carregar_tabela_procedimentos.asp?codigo='+id_gds+'" target="_blank">Ver Tabela de Procedimentos e Valores</a>'  
-          }
+
           console.log('Descricao ==> ' + descricao)
 
             const queryEnd = `SELECT guia_de_servico_enderecos.id_gdsend, guia_de_servico_enderecos.id_gds,  guia_de_servico_enderecos.id_referencia_endereco, guia_de_servico_enderecos.endereco, guia_de_servico_enderecos.numero, guia_de_servico_enderecos.complemento,  guia_de_servico_enderecos.bairro, guia_de_servico_enderecos.cd_cidade, a_cidades_1.Nm_cidade, guia_de_servico_enderecos.cep, guia_de_servico_enderecos.latitude,  guia_de_servico_enderecos.longitude, guia_de_servico_enderecos.telefone , guia_de_servico_enderecos.whatsapp, a_cidades_1.id_rede AS IdRedeCidade FROM [ASSOCIACAO].[cartao_beneficios].[dbo].guia_de_servico_enderecos as guia_de_servico_enderecos INNER JOIN  ASSOCIACAO.associacao.dbo.a_cidades AS a_cidades_1 ON  guia_de_servico_enderecos.cd_cidade = a_cidades_1.Cd_cidade  WHERE (guia_de_servico_enderecos.id_gds = `+ id_gds +`) ORDER BY id_gdsend`
@@ -239,25 +259,38 @@ fastify.get('/importarConvenios', async (request, reply) => {
            options.body = formData;
          
           try {
+            console.log(' ===== ENVIANDO API ===== ')  
             const response = await fetch(url, options);
             const data = await response.json();            
-             const {id,slug} = data
-                console.log('ID GDS =>' + id_gds );
-                console.log('id Rede => ' + id);
-                console.log('slug =>' + slug);
+            const {id,slug} = data
+              console.log('ID GDS =>' + id_gds );
+              console.log('id Rede => ' + id);
+              console.log('slug =>' + slug);
 //                console.log(data);
                 //const connGuia = await connectToDatabaseGuia();
-                console.log('Retorno API =>' + {data})
+             //console.log('Retorno API =>' + {data})
 
                 if(id  !== undefined){
                   const queryUpdate = `UPDATE guia_de_servico SET id_rede ='`+id+`' , slug ='`+slug+`' WHERE (id_gds = '`+id_gds+`')`
                   //const queryUpdate = 'SELECT TOP (50) id_grupo_area, fk_grupo, fk_cd_da_area FROM grupo_area'
                   console.log('Query =>' + queryUpdate)  
                   const result = await guia.query(queryUpdate);
-                }                     
+                } else{
+                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro undefined , slug ='Erro undefined' WHERE (id_gds = '`+id_gds+`')`
+                  const result = await guia.query(queryUpdate);
+                }                    
 
           } catch (error) {
-            console.error(error);
+            let erroFormat = error
+
+            if(error.length > 250){
+              erroFormat = error.substring(0,248)
+            }
+
+            const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro ' , slug ='`+erroFormat+`' WHERE (id_gds = '`+id_gds+`')`
+            //const queryUpdate = 'SELECT TOP (50) id_grupo_area, fk_grupo, fk_cd_da_area FROM grupo_area'
+            const result = await guia.query(queryUpdate);
+            console.error('deu erro ==> ' + error);
           }
         
     })
