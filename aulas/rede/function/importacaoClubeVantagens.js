@@ -1,78 +1,56 @@
-import Fastify from 'fastify';
 import FormData from 'form-data';
 import fetch from 'node-fetch'
 import fs from 'fs';
-import { assoc} from './dbConfig.js';
-import { guia} from './dbConfigGuia.js';
-import { CharToNumber,NumberToChar } from '../function/numberToChar.js';
-
-const fastify = Fastify();//{logger:true}
-
- // and id_gds = 2
-
- 
-
- fastify.get('/teste', async (req,reply)=>{
+import { assoc} from '../src/dbConfig.js' ;
+import  { guia} from '../src/dbConfigGuia.js';
+import { CharToNumber,NumberToChar } from './numberToChar.js';
 
 
-      // //const queryUpdate = `SELECT TOP (50) Cd_convênio, Razão_social FROM A_convenio`
-      // //const queryUpdate = `SELECT TOP (50) [id_grupo_area], [fk_grupo], [fk_cd_da_area] FROM [grupo_area]`
-      // const queryUpdate = `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'`
-      // let result1 = (await assoc.request().query(queryUpdate)).recordset;
-      // result1.forEach( banco =>{
-      //     console.log(banco.TABLE_NAME);
-      //     } 
-      // )
-
-      // console.log(' ============= CONEXÃO BANCO GUIA ONLINE ============= ')
-      // let result = (await pool2.query(queryUpdate)).recordset;
-      // result.forEach( banco =>{
-      //     console.log(banco.TABLE_NAME);
-      //     } 
-      // )
-
- const matricula= 'hhzz'
-const texto= 'hhzz'
-
-  
- console.log('NumberToChar ==>' + await NumberToChar(matricula))
- console.log('CharToNumber ==>' + await CharToNumber(texto))
- 
-  reply.status('200').send('Teste')
 
 
- })
+export async function agendaTest(){
+    const now = new Date();
+    console.log('Executador => ' + now.toLocaleTimeString())
+} 
 
-fastify.get('/importarConvenios', async (request, reply) => {
-  try {
-    let formData = new FormData();
-    let categorias = [];
-    let palavrasChave = [];
-    let cidades = [];
-    let beneficio = '';
-    let descricao='';
-    let tipoPagamento = '';
+
+function addToFormData(form, attribute, value) {
+    if (value !== null && value !== undefined && value !== '') {
+      //console.log(attribute +'  -  '+ value)
+      form.append(attribute, value);
+    }
+  }
+
+
+
+export async function importarConvenios(){
+    await assoc.connect()
+    await guia.connect()
+
+
+    const now = new Date();
+    console.log('Executado 01 => ' + now.toLocaleTimeString())
         
+       
     const filePath = 'C:/NODEJS/aulas/rede/img/file_300_250.jpg'
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
    // const connAssocia = await connectToDatabaseAssoc();
-    
-
-    
-    function addToFormData(form, attribute, value) {
-      if (value !== null && value !== undefined && value !== '') {
-        //console.log(attribute +'  -  '+ value)
-        form.append(attribute, value);
-      }
-    }
-
-    const queryConv = `SELECT top 10 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online, tabela_procedimentos  FROM [ASSOCIACAO].[cartao_beneficios].[dbo].[guia_de_servico] WHERE (ativo = 1) AND (cod_dentista = 0) AND  (Código_do_dentista = 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') and id_gds = '2266'`
+        
+    const queryConv = `SELECT top 1 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online, tabela_procedimentos  FROM [ASSOCIACAO].[cartao_beneficios].[dbo].[guia_de_servico] WHERE (ativo = 1) AND (cod_dentista = 0) AND  (Código_do_dentista = 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') and tabela_procedimentos = 1 `// and id_gds = '4512'`
     //console.log(queryConv)
     const resultado = (await assoc.query(queryConv)).recordset
  
 
     resultado.forEach(async (convenio) =>{
+        let formData = new FormData();
+        let categorias = [];
+        let palavrasChave = [];
+        let cidades = [];
+        let beneficio = '';
+        let descricao='';
+        let tipoPagamento = '';
+    
         const{ id_gds, nome_parceiro, site,  desconto_em_folha, descricao_desconto, desconto, resume, ativo, start_date, type, caminho_logomarca, email, instagram, facebook, twitter, online, tabela_procedimentos } = convenio;       
 
         if (descricao_desconto !== null && descricao_desconto !== undefined && descricao_desconto !== '') {
@@ -90,22 +68,17 @@ fastify.get('/importarConvenios', async (request, reply) => {
 
         }
 
-       // beneficio = 'Apresente o cartão  ABEPOM e desfrute de mais este benefício de ser nosso Associado.' //+ tipoPagamento 
-        //beneficio += descricao
-
-
-        
-
-        //addToFormData(formData, 'title',nome_parceiro)
         formData.append('title',nome_parceiro)
         addToFormData(formData, 'cover',fs.createReadStream(filePath))       
         //addToFormData(formData, 'cover', 'PROVOCANDO ERRO')       
         console.log('Descrição do desconto =>' +  descricao_desconto)
+        console.log('Descrição =>' +  descricao)
         addToFormData(formData, 'benefit', beneficio) 
         addToFormData(formData, 'resume',  beneficio) //mostra o texto quando passa o mouse na imagem 
         formData.append('visibility','true')
         const date = new Date();
         const dateString = date.toLocaleDateString();
+        console.log('Executado 02 ==> ' + date.toLocaleTimeString())
         addToFormData(formData, 'start_date',dateString)
         if(online){
           addToFormData(formData, 'type','onLine')
@@ -120,40 +93,34 @@ fastify.get('/importarConvenios', async (request, reply) => {
        
         formData.append('invert_location_filter','false')             
         addToFormData(formData, 'priority','255')
-        // console.log(JSON.stringify(form))
-
         // INICIO AREAS / ESPECIALIDADE
-              const queryEspecialidades = `SELECT        guia_de_servico_especialidades_1.descricao_area, grupo_de_servico_1.id_grupo, grupo_de_servico_1.descricao_grupo, grupo_de_servico_1.id_rede, guia_de_servico_especialidades_1.tipo_especialidade FROM ASSOCIACAO.cartao_beneficios.dbo.guia_de_servico_especialidades AS guia_de_servico_especialidades_1 LEFT OUTER JOIN ASSOCIACAO.cartao_beneficios.dbo.area_de_atuacao AS area_de_atuacao_1 ON guia_de_servico_especialidades_1.cd_da_area = area_de_atuacao_1.cd_da_area LEFT OUTER JOIN                          ASSOCIACAO.cartao_beneficios.dbo.grupo_area AS grupo_area_1 ON area_de_atuacao_1.cd_da_area = grupo_area_1.fk_cd_da_area LEFT OUTER JOIN                          ASSOCIACAO.cartao_beneficios.dbo.grupo_de_servico AS grupo_de_servico_1 ON grupo_area_1.fk_grupo = grupo_de_servico_1.id_grupo WHERE        (guia_de_servico_especialidades_1.id_gds = `+id_gds+`) ORDER BY guia_de_servico_especialidades_1.id_gdse`
+        const queryEspecialidades = `SELECT guia_de_servico_especialidades_1.descricao_area, grupo_de_servico_1.id_grupo, grupo_de_servico_1.descricao_grupo, grupo_de_servico_1.id_rede, guia_de_servico_especialidades_1.tipo_especialidade FROM ASSOCIACAO.cartao_beneficios.dbo.guia_de_servico_especialidades AS guia_de_servico_especialidades_1 LEFT OUTER JOIN ASSOCIACAO.cartao_beneficios.dbo.area_de_atuacao AS area_de_atuacao_1 ON guia_de_servico_especialidades_1.cd_da_area = area_de_atuacao_1.cd_da_area LEFT OUTER JOIN                          ASSOCIACAO.cartao_beneficios.dbo.grupo_area AS grupo_area_1 ON area_de_atuacao_1.cd_da_area = grupo_area_1.fk_cd_da_area LEFT OUTER JOIN                          ASSOCIACAO.cartao_beneficios.dbo.grupo_de_servico AS grupo_de_servico_1 ON grupo_area_1.fk_grupo = grupo_de_servico_1.id_grupo WHERE        (guia_de_servico_especialidades_1.id_gds = `+id_gds+`) ORDER BY guia_de_servico_especialidades_1.id_gdse`
 
         //console.log(queryEspecialidades)
         
        const resultadoEsp = (await assoc.query(queryEspecialidades)).recordset
        categorias = []
        palavrasChave = []
-                resultadoEsp.forEach(async(areaEspecialidade) => {
+        resultadoEsp.forEach(async(areaEspecialidade) => {
 
                     const { tipo_especialidade, descricao_area, id_rede } = areaEspecialidade
-                    if (tipo_especialidade == 1){
-                        categorias.push(id_rede)
-                        console.log('descricao_area_Tipo1 ==>' + descricao_area + '-' + id_rede)
-                      }else{
-                        palavrasChave.push(descricao_area)
-                        console.log('descricao_area_Tipo1 ==>' + descricao_area + '-' + id_rede)
-                        
-                      }
-                  }
-                )
-         // console.log('Catagorias no Array: ' + JSON.stringify(categorias))
-         // console.log('Palavras Chaves: ' + JSON.stringify(palavrasChave))
-
-          for (const value of categorias){
+                if (tipo_especialidade == 1){
+                     categorias.push(id_rede)
+                     // console.log('descricao_area_Tipo1 ==>' + descricao_area + '-' + id_rede)
+                }else{
+                    palavrasChave.push(descricao_area)
+                    //console.log('descricao_area_Tipo1 ==>' + descricao_area + '-' + id_rede)                       
+                }
+            }
+        )
+        for (const value of categorias){
             addToFormData(formData, 'categories[]', value)
-          }
+        }
 
-          if (tabela_procedimentos){
+        if (tabela_procedimentos){
             const id_gds_Encriptado = await NumberToChar(''+id_gds+'')
-            descricao += '<br><br><a href="https://www.abepom.org.br/guiaonline/tabela_procedimentos_clube_vantagens.asp?key='+ id_gds_Encriptado+'" target="_blank" style="padding: 10px 20px; background-color: #87CEFA; text-decoration: none; border-radius: 20px;">Ver Tabela de Procedimentos e Valores</a>'  
-          }
+            descricao += '<br><br><a href="https://www.abepom.org.br/guiaonline/tabela_procedimentos_clube_vantagens.asp?key='+ id_gds_Encriptado+'" target="_blank" style="padding: 10px 20px; background-color: #87CEFA; text-decoration: none;color: #000000 !important; border-radius: 20px;">Ver Tabela de Procedimentos e Valores</a>'  
+        }
 
           if (palavrasChave.length > 0) {
            descricao += '<br><br><i>Confira alguns de nossos serviços:</i>'
@@ -167,26 +134,24 @@ fastify.get('/importarConvenios', async (request, reply) => {
             descricao += '</ul>'
            }
 
-
           console.log('Descricao ==> ' + descricao)
 
-            const queryEnd = `SELECT guia_de_servico_enderecos.id_gdsend, guia_de_servico_enderecos.id_gds,  guia_de_servico_enderecos.id_referencia_endereco, guia_de_servico_enderecos.endereco, guia_de_servico_enderecos.numero, guia_de_servico_enderecos.complemento,  guia_de_servico_enderecos.bairro, guia_de_servico_enderecos.cd_cidade, a_cidades_1.Nm_cidade, guia_de_servico_enderecos.cep, guia_de_servico_enderecos.latitude,  guia_de_servico_enderecos.longitude, guia_de_servico_enderecos.telefone , guia_de_servico_enderecos.whatsapp, a_cidades_1.id_rede AS IdRedeCidade FROM [ASSOCIACAO].[cartao_beneficios].[dbo].guia_de_servico_enderecos as guia_de_servico_enderecos INNER JOIN  ASSOCIACAO.associacao.dbo.a_cidades AS a_cidades_1 ON  guia_de_servico_enderecos.cd_cidade = a_cidades_1.Cd_cidade  WHERE (guia_de_servico_enderecos.id_gds = `+ id_gds +`) ORDER BY id_gdsend`
+          const queryEnd = `SELECT guia_de_servico_enderecos.id_gdsend, guia_de_servico_enderecos.id_gds,  guia_de_servico_enderecos.id_referencia_endereco, guia_de_servico_enderecos.endereco, guia_de_servico_enderecos.numero, guia_de_servico_enderecos.complemento,  guia_de_servico_enderecos.bairro, guia_de_servico_enderecos.cd_cidade, a_cidades_1.Nm_cidade, guia_de_servico_enderecos.cep, guia_de_servico_enderecos.latitude,  guia_de_servico_enderecos.longitude, guia_de_servico_enderecos.telefone , guia_de_servico_enderecos.whatsapp, a_cidades_1.id_rede AS IdRedeCidade FROM [ASSOCIACAO].[cartao_beneficios].[dbo].guia_de_servico_enderecos as guia_de_servico_enderecos INNER JOIN  ASSOCIACAO.associacao.dbo.a_cidades AS a_cidades_1 ON  guia_de_servico_enderecos.cd_cidade = a_cidades_1.Cd_cidade  WHERE (guia_de_servico_enderecos.id_gds = `+ id_gds +`) ORDER BY id_gdsend`
             //console.log(queryEnd)
             //const [resultadoEnd] = await sequelize.query(queryEnd)
-            const resultadoEnd = (await assoc.query(queryEnd)).recordset
-            let enderecoFormatado = ''   
-            cidades = []
-            let mapa = ''
-            let tituloDescricaoEndereco = true
-            let definirEnderecoPrincipal = true
-            resultadoEnd.forEach(async (enderecoConv)=>{
+          const resultadoEnd = (await assoc.query(queryEnd)).recordset
+          let enderecoFormatado = ''   
+          cidades = []
+          let mapa = ''
+          let tituloDescricaoEndereco = true
+          let definirEnderecoPrincipal = true
+          resultadoEnd.forEach(async (enderecoConv)=>{
                 const {endereco,numero, complemento, bairro, Nm_cidade, cep, telefone , whatsapp, IdRedeCidade,latitude,longitude} = enderecoConv
 
                 cidades.push(IdRedeCidade)
 
                 console.log('Endereço ==>' + id_gds + endereco  + ',' +  numero + ',' + bairro  + ',' +  Nm_cidade + '-CEP:' + cep   )
-                    enderecoFormatado =  endereco  + ',' +  numero + ',' + bairro  + ',' +  Nm_cidade + '-CEP:' + cep  + ' Fone: ' 
-                        
+                    enderecoFormatado =  endereco  + ',' +  numero + ',' + bairro  + ',' +  Nm_cidade + '-CEP:' + cep  + ' Fone: '                        
                     if (telefone !== '') {
                         enderecoFormatado +=  telefone
                     }
@@ -201,9 +166,8 @@ fastify.get('/importarConvenios', async (request, reply) => {
                     }
                     if ((longitude!== null) || (latitude!== null)){
                       mapa = '<a href="https://maps.google.com/?q='+latitude+','+longitude+'"  target="_blank"> VER NO MAPA </a>'
-                      //mapa = 'https://maps.google.com/?q='+ latitude +','+ longitude                     
-                      enderecoFormatado += '<br> <strong>MAPA:</strong> ' + mapa
-                      console.log('MAPA ==>  ' + mapa)
+                      enderecoFormatado += '<br> <strong>Localização:</strong> ' + mapa
+                      console.log('Localização: ==>  ' + mapa)
                     }
 
                     if(definirEnderecoPrincipal){
@@ -222,8 +186,6 @@ fastify.get('/importarConvenios', async (request, reply) => {
 
             })
 
-          console.log('Categorias no Array ==> ' + JSON.stringify(categorias))
-          console.log('Cidades no Array ==> ' + JSON.stringify(cidades))
         
           addToFormData(formData, 'description',descricao)
 
@@ -276,7 +238,7 @@ fastify.get('/importarConvenios', async (request, reply) => {
                   console.log('Query =>' + queryUpdate)  
                   const result = await guia.query(queryUpdate);
                 } else{
-                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro undefined , slug ='Erro undefined' WHERE (id_gds = '`+id_gds+`')`
+                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro undefined' , slug ='Erro undefined' WHERE id_gds = `+id_gds
                   const result = await guia.query(queryUpdate);
                 }                    
 
@@ -289,31 +251,12 @@ fastify.get('/importarConvenios', async (request, reply) => {
 
             const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro ' , slug ='`+erroFormat+`' WHERE (id_gds = '`+id_gds+`')`
             //const queryUpdate = 'SELECT TOP (50) id_grupo_area, fk_grupo, fk_cd_da_area FROM grupo_area'
-            const result = await guia.query(queryUpdate);
+            //const result = await guia.query(queryUpdate);
             console.error('deu erro ==> ' + error);
           }
         
     })
 
+            
 
-    reply.status('200').send({resultado})
-
-} catch (err) {
-    reply.status(500).send({ error: 'Internal Server Error 112' + err });
-  }
-});
-
-const start = async () => {
-  try {
-    await fastify.listen({ port: 3333 });
-    //fastify.log.info('Server listening on http://localhost:3333');
-    
-  } catch (err) {
-    //fastify.log.error(err);
-    process.exit(1);
-  }
-};
-
-start().then(()=>{
-  console.log('Servidor rodando')
-});
+}
