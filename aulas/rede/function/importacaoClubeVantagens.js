@@ -7,11 +7,10 @@ import { CharToNumber,NumberToChar } from './numberToChar.js';
 
 
 
-
-export async function agendaTest(){
-    const now = new Date();
-    console.log('Executador => ' + now.toLocaleTimeString())
-} 
+  
+  const descricaoPersonalidade = {
+    2 : "Compre medicamentos com parcelamento na folha de pagamento."
+  }
 
 
 function addToFormData(form, attribute, value) {
@@ -21,6 +20,21 @@ function addToFormData(form, attribute, value) {
     }
   }
 
+
+  function getCurrentDateTime() {
+    const now = new Date();
+  
+    // Extrai os componentes da data e hora
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Meses são indexados de 0 a 11
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+    // Formata a data e hora no padrão 'YYYY-MM-DD HH:MM:SS'
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
 
 
 export async function importarConvenios(){
@@ -37,11 +51,11 @@ export async function importarConvenios(){
 
    // const connAssocia = await connectToDatabaseAssoc();
         
-    const queryConv = `SELECT top 1 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online, tabela_procedimentos  FROM [ASSOCIACAO].[cartao_beneficios].[dbo].[guia_de_servico] WHERE (ativo = 1) AND (cod_dentista = 0) AND  (Código_do_dentista = 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') and tabela_procedimentos = 1 `// and id_gds = '4512'`
+    const queryConv = `SELECT top 2 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online, tabela_procedimentos  FROM [ASSOCIACAO].[cartao_beneficios].[dbo].[guia_de_servico] WHERE (ativo = 1) AND (cod_dentista = 0) AND  (Código_do_dentista = 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') and id_gds in (686)  `// and tabela_procedimentos = 1 `// and id_gds = '4512'`
     //console.log(queryConv)
     const resultado = (await assoc.query(queryConv)).recordset
  
-
+     console.log('resultado.length ==> ' + resultado.length )
     resultado.forEach(async (convenio) =>{
         let formData = new FormData();
         let categorias = [];
@@ -50,14 +64,43 @@ export async function importarConvenios(){
         let beneficio = '';
         let descricao='';
         let tipoPagamento = '';
-    
+
+           
         const{ id_gds, nome_parceiro, site,  desconto_em_folha, descricao_desconto, desconto, resume, ativo, start_date, type, caminho_logomarca, email, instagram, facebook, twitter, online, tabela_procedimentos } = convenio;       
 
+
+        const queryGrupo = `SELECT top 1 guia_de_servico_especialidades.cd_da_area, guia_de_servico_especialidades.codigo_especialidade, guia_de_servico_especialidades.descricao_area, grupo_area.fk_grupo as grupoGuia, grupo_de_servico.descricao_grupo FROM            guia_de_servico_especialidades INNER JOIN grupo_area ON guia_de_servico_especialidades.cd_da_area = grupo_area.fk_cd_da_area INNER JOIN  grupo_de_servico ON grupo_area.fk_grupo = grupo_de_servico.id_grupo WHERE   (guia_de_servico_especialidades.id_gds = `+id_gds+`) AND guia_de_servico_especialidades.tipo_especialidade = 1 ORDER BY guia_de_servico_especialidades.id_gdse`
+
+        console.log("Grupo Guia => " + queryGrupo)
+        const resultGrupo = (await guia.query(queryGrupo)).recordset
+        
+        let grupoArea = []  
+        resultGrupo.forEach(async (grupo)=>{
+          grupoArea = grupo ;
+        })
+
+        const{ cd_da_area, grupoGuia,descricao_grupo } = grupoArea
+        // console.log("Descricao Grupo  Guia => " + descricao_grupo)
+        // console.log("Grupo Guia => " + grupoGuia)
+        
+        // if(descricaoPersonalidade[grupoGuia]){
+        //   console.log("Descricao Personalizada:  " + descricaoPersonalidade[grupoGuia])
+        // }else{
+        //   console.log("Descricao Grupo  Guia Não localizado ")
+
+        // }
+
+
         if (descricao_desconto !== null && descricao_desconto !== undefined && descricao_desconto !== '') {
-          descricao = descricao_desconto
+          descricao = "15% de desconto sob o valor das diárias, exceto pacotes de Reveillon e Carnaval."//descricao_desconto
         }else{
-          descricao = 'Entre em contato com o conveniado ABEPOM e saiba mais sobre os benefícios'
+          if(descricaoPersonalidade[grupoGuia]){
+            descricao =  descricaoPersonalidade[grupoGuia]
+          }else{
+            descricao = 'Entre em contato com o conveniado ABEPOM e saiba mais sobre os benefícios' 
+          }
         }
+
         if (desconto_em_folha) {
           tipoPagamento =  ' Desconto em Folha'
           beneficio = 'Conveniado com Desconto em folha'
@@ -71,7 +114,7 @@ export async function importarConvenios(){
         formData.append('title',nome_parceiro)
         addToFormData(formData, 'cover',fs.createReadStream(filePath))       
         //addToFormData(formData, 'cover', 'PROVOCANDO ERRO')       
-        console.log('Descrição do desconto =>' +  descricao_desconto)
+       // console.log('Descrição do desconto =>' +  descricao_desconto)
         console.log('Descrição =>' +  descricao)
         addToFormData(formData, 'benefit', beneficio) 
         addToFormData(formData, 'resume',  beneficio) //mostra o texto quando passa o mouse na imagem 
@@ -79,6 +122,7 @@ export async function importarConvenios(){
         const date = new Date();
         const dateString = date.toLocaleDateString();
         console.log('Executado 02 ==> ' + date.toLocaleTimeString())
+        console.log('Teste de DATA  ==> ' + getCurrentDateTime())
         addToFormData(formData, 'start_date',dateString)
         if(online){
           addToFormData(formData, 'type','onLine')
@@ -86,9 +130,9 @@ export async function importarConvenios(){
           addToFormData(formData, 'type','local')
         }
         if (desconto_em_folha) { 
-          addToFormData(formData, 'rescue_text','Aproveite os benefícios deste conveniado com o Desconto em Folha.')
+          addToFormData(formData, 'rescue_text','Apresente seu Cartão do Associado ABEPOM juntamente ao RG no local.')
         }else{
-          addToFormData(formData, 'rescue_text','Apresente o cartão do Associado e solicite o desconto de ' + desconto + ' % com o pagamento no local.')
+          addToFormData(formData, 'rescue_text','Apresente seu Cartão do Associado ABEPOM juntamente ao RG e solicite o desconto de ' + desconto + ' % com o pagamento no local.')
         }
        
         formData.append('invert_location_filter','false')             
@@ -137,8 +181,7 @@ export async function importarConvenios(){
           console.log('Descricao ==> ' + descricao)
 
           const queryEnd = `SELECT guia_de_servico_enderecos.id_gdsend, guia_de_servico_enderecos.id_gds,  guia_de_servico_enderecos.id_referencia_endereco, guia_de_servico_enderecos.endereco, guia_de_servico_enderecos.numero, guia_de_servico_enderecos.complemento,  guia_de_servico_enderecos.bairro, guia_de_servico_enderecos.cd_cidade, a_cidades_1.Nm_cidade, guia_de_servico_enderecos.cep, guia_de_servico_enderecos.latitude,  guia_de_servico_enderecos.longitude, guia_de_servico_enderecos.telefone , guia_de_servico_enderecos.whatsapp, a_cidades_1.id_rede AS IdRedeCidade FROM [ASSOCIACAO].[cartao_beneficios].[dbo].guia_de_servico_enderecos as guia_de_servico_enderecos INNER JOIN  ASSOCIACAO.associacao.dbo.a_cidades AS a_cidades_1 ON  guia_de_servico_enderecos.cd_cidade = a_cidades_1.Cd_cidade  WHERE (guia_de_servico_enderecos.id_gds = `+ id_gds +`) ORDER BY id_gdsend`
-            //console.log(queryEnd)
-            //const [resultadoEnd] = await sequelize.query(queryEnd)
+
           const resultadoEnd = (await assoc.query(queryEnd)).recordset
           let enderecoFormatado = ''   
           cidades = []
@@ -219,7 +262,7 @@ export async function importarConvenios(){
              headers: {Accept: 'application/json', Authorization: accessToken}
            };
            options.body = formData;
-         
+           const dataHoraAtual = getCurrentDateTime()
           try {
             console.log(' ===== ENVIANDO API ===== ')  
             const response = await fetch(url, options);
@@ -230,15 +273,15 @@ export async function importarConvenios(){
               console.log('slug =>' + slug);
 //                console.log(data);
                 //const connGuia = await connectToDatabaseGuia();
-             //console.log('Retorno API =>' + {data})
-
+             console.log('Retorno API =>' + {data})
+           
                 if(id  !== undefined){
-                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='`+id+`' , slug ='`+slug+`' WHERE (id_gds = '`+id_gds+`')`
+                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='`+id+`' , slug ='`+slug+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`' WHERE (id_gds = '`+id_gds+`')`
                   //const queryUpdate = 'SELECT TOP (50) id_grupo_area, fk_grupo, fk_cd_da_area FROM grupo_area'
                   console.log('Query =>' + queryUpdate)  
                   const result = await guia.query(queryUpdate);
                 } else{
-                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro undefined' , slug ='Erro undefined' WHERE id_gds = `+id_gds
+                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro undefined' , slug ='Erro undefined', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`'  WHERE id_gds = `+id_gds
                   const result = await guia.query(queryUpdate);
                 }                    
 
@@ -249,7 +292,7 @@ export async function importarConvenios(){
               erroFormat = error.substring(0,248)
             }
 
-            const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro ' , slug ='`+erroFormat+`' WHERE (id_gds = '`+id_gds+`')`
+            const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro ' , slug ='`+erroFormat+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`' WHERE (id_gds = '`+id_gds+`')`
             //const queryUpdate = 'SELECT TOP (50) id_grupo_area, fk_grupo, fk_cd_da_area FROM grupo_area'
             //const result = await guia.query(queryUpdate);
             console.error('deu erro ==> ' + error);
