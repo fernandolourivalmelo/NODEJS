@@ -146,7 +146,7 @@ fastify.get('/importarConvenios', async (request, reply) => {
 //                 )
 //          // console.log('Catagorias no Array: ' + JSON.stringify(categorias))
 //          // console.log('Palavras Chaves: ' + JSON.stringify(palavrasChave))
-
+cd re
 //           for (const value of categorias){
 //             addToFormData(formData, 'categories[]', value)
 //           }
