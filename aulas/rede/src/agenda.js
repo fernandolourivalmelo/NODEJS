@@ -1,11 +1,20 @@
 import cron from 'node-cron'
-import { importarConvenios } from '../function/importacaoClubeVantagens.js'
+import { importarConvenios, importarOdontologia } from '../function/importacaoClubeVantagens.js'
 import { assoc} from '../src/dbConfig.js' ;
 import { guia} from '../src/dbConfigGuia.js';
 
-importarConvenios()
 
-// cron.schedule('* * * * *',()=>{
+
+importarOdontologia()
+
+// importarConvenios()
+
+// const task = cron.schedule('* * * * *',()=>{   
 //     console.log('=== Executando a função ===')
 //     importarConvenios()
 // })
+
+// task.start
+// setTimeout(()=>{
+//     task.stop
+// }, 5 * 60 * 1000)
