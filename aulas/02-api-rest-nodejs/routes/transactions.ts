@@ -17,15 +17,15 @@ export async function transactionsRoutes(app: FastifyInstance) {
 
     const { title, amount, type } = createTransactionSchema.parse(request.body)
 
-let sessionId = request.cookies.sessionId
-  if(!sessionId){
-    sessionId = randomUUID()
-    reply.cookie('sessionId',sessionId,{
-      path:'/',
-      maxAge: 60*60*24*7 // 7 dias =>  segundos * horas * qtd horas * dias
-    })
-    console.log(sessionId)
-  }
+// let sessionId = request.cookies.sessionId
+//   if(!sessionId){
+//     sessionId = randomUUID()
+//     reply.cookie('sessionId',sessionId,{
+//       path:'/',
+//       maxAge: 60*60*24*7 // 7 dias =>  segundos * horas * qtd horas * dias
+//     })
+//     console.log(sessionId)
+//   }
 
     await knex('transactions').insert({
       id: randomUUID(),
@@ -61,4 +61,11 @@ let sessionId = request.cookies.sessionId
     return {transaction}
 
   })
+
+  app.get('/tabelas',async()=>{
+    const tables = await knex('sqlite_schema').select('*')
+  
+    return {tables}
+  })
+  
 }
