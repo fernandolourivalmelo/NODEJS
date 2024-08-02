@@ -7,11 +7,11 @@ import { guia} from '../src/dbConfigGuia.js';
 
 importarOdontologia()
 
-// importarConvenios()
+importarConvenios()
 
 // const task = cron.schedule('* * * * *',()=>{   
 //     console.log('=== Executando a função ===')
-//     importarConvenios()
+//     importarOdontologia()
 // })
 
 // task.start
