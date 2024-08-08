@@ -5,6 +5,9 @@ import crypto from 'node:crypto'
 import { env } from './env'
 import { transactionsRoutes } from '../routes/transactions'
 import cookie from '@fastify/cookie'
+
+
+
 const app = fastify()
 
 app.register(cookie)
