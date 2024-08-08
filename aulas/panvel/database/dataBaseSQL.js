@@ -1,10 +1,23 @@
+import 'dotenv/config'
 import sqlAss from 'mssql';
+import {z} from 'zod'
+
+
+const envSchema = z.object({
+  DATABASE_URL: z.string(),
+  DATABASE_USER: z.string(),
+  DATABASE_PASS: z.string(),
+  SECRET_KEY: z.string()
+})
 
 // Configuração do banco de dados
+
+const env = envSchema.parse(process.env)
+
 const config = {
-  user: 'sa',
-  password: 'abepom',
-  server: '192.168.1.34',
+  user: env.DATABASE_USER,
+  password: env.DATABASE_PASS,
+  server: env.DATABASE_URL,
   database: 'associacao',
   options: {
     encrypt: false, // Use isso se estiver usando o Azure SQL
@@ -23,4 +36,4 @@ async function connectToDatabaseAssoc() {
   }
 }
 
-export { connectToDatabaseAssoc, sqlAss };
+export { connectToDatabaseAssoc, sqlAss , env};

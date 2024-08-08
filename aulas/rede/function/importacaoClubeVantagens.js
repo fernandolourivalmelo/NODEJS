@@ -4,6 +4,7 @@ import fs from 'fs';
 import { assoc} from '../src/dbConfig.js' ;
 import  { guia} from '../src/dbConfigGuia.js';
 import { CharToNumber,NumberToChar } from './numberToChar.js';
+import { envioAPI } from './envioAPI.js';
 
 
 
@@ -19,7 +20,6 @@ import { CharToNumber,NumberToChar } from './numberToChar.js';
     6 :"Realize tratamentos odontológicos com pagamento parcelado na folha.",
     //JURÍDICO
     80:"Utilize serviços jurídicos com pagamento parcelado em até 24X na folha."
-
 
   }
 
@@ -82,7 +82,7 @@ export async function importarConvenios(){
 
         const queryGrupo = `SELECT top 1 guia_de_servico_especialidades.cd_da_area, guia_de_servico_especialidades.codigo_especialidade, guia_de_servico_especialidades.descricao_area, grupo_area.fk_grupo as grupoGuia, grupo_de_servico.descricao_grupo FROM            guia_de_servico_especialidades INNER JOIN grupo_area ON guia_de_servico_especialidades.cd_da_area = grupo_area.fk_cd_da_area INNER JOIN  grupo_de_servico ON grupo_area.fk_grupo = grupo_de_servico.id_grupo WHERE   (guia_de_servico_especialidades.id_gds = `+id_gds+`) AND guia_de_servico_especialidades.tipo_especialidade = 1 ORDER BY guia_de_servico_especialidades.id_gdse`
 
-        //console.log("Grupo Guia => " + queryGrupo)
+        console.log("Grupo Guia => " + queryGrupo)
         const resultGrupo = (await guia.query(queryGrupo)).recordset
         
         let grupoArea = []  
@@ -146,8 +146,11 @@ export async function importarConvenios(){
         }
         if (desconto_em_folha) { 
           addToFormData(formData, 'rescue_text','Apresente seu Cartão do Associado ABEPOM juntamente ao RG no local.')
+          addToFormData(formData, 'voucher_content','Apresente seu Cartão do Associado ABEPOM juntamente ao RG no local.')
         }else{
           addToFormData(formData, 'rescue_text','Apresente seu Cartão do Associado ABEPOM juntamente ao RG e solicite o desconto de ' + desconto + ' % com o pagamento no local.')
+            addToFormData(formData, 'voucher_content','Apresente seu Cartão do Associado ABEPOM juntamente ao RG e solicite o desconto de ' + desconto + ' % com o pagamento no local.')          
+           
         }
        
         formData.append('invert_location_filter','false')             
@@ -166,7 +169,8 @@ export async function importarConvenios(){
                 if (tipo_especialidade == 1){
                      categorias.push(id_rede)
                      // console.log('descricao_area_Tipo1 ==>' + descricao_area + '-' + id_rede)
-                }else{
+                     palavrasChave.push(descricao_area)
+                 }else{
                     palavrasChave.push(descricao_area)
                     //console.log('descricao_area_Tipo1 ==>' + descricao_area + '-' + id_rede)                       
                 }
@@ -184,8 +188,12 @@ export async function importarConvenios(){
         }
 
           if (palavrasChave.length > 0) {
-           descricao += '<br><br><i>Confira alguns de nossos serviços:</i>'
-           descricao += '<ul>'
+            if (palavrasChave.length > 1) {
+               descricao += '<br><br><i>Confira alguns de nossos serviços:</i>'
+            }else{
+              descricao += '<br><br><i>Serviço prestado:</i>'
+            } 
+               descricao += '<ul>'
           }
           for (const value of palavrasChave){
             descricao += '<li>' + value + '</li>'  
@@ -259,65 +267,14 @@ export async function importarConvenios(){
        addToFormData(formData, 'instagram_link',instagram)
        addToFormData(formData, 'facebook_link',facebook)
        addToFormData(formData, 'twitter_link',twitter)
-       addToFormData(formData, 'show_card','false')
+       //addToFormData(formData, 'show_card','false')
        addToFormData(formData, 'contact_email',email)
+       
 
-       //Envio para a API
+       
 
-       //Teste
-       //const accessToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5YmMyODU2MC03NDM0LTQ0MzctODk1MC0xMDkwNzhkZDA5M2IiLCJqdGkiOiJhOTY5MjA2ZTk0ZTcwMDMyOTAyZWM2NjgzMGQ1Mzk2NjM0MDExZGNhOWFkZGQ5NGM3ZDZlZDdlNGJhZDY2ZmFiNDk3MzVhYjFhNzQ1OGZkYyIsImlhdCI6MTcxNjU2ODM1MS43NDY1ODUsIm5iZiI6MTcxNjU2ODM1MS43NDY1OSwiZXhwIjoxNzQ4MTA0MzUxLjczNjk0LCJzdWIiOiIiLCJzY29wZXMiOlsiKiJdfQ.jr-TqLmITAbGsOo3km8lVMK9XDlKeobDpJJbkT3nI2gXYmP4qR8oRvl67CUcEBwiDFFVYyr0NLa2zlGeFjNUCiEGOF4VtxmeByDaTqyQlqXeA3IOU6UCwxUjO81bZxjaRIz2BiyEZnxqL96qFMre0Ckt-r8ZZlUq-Sag9L6DN5t5coB4wnPRWa-0eSZZjObUDdhFSPHMFduQ4N3VxQ5EM6T4erjXsV17sZRkww_0jRHS3U07qHZkZaiifleomzgk9eHqAVLhYuAWdX4Z0sgXTKelkxILOfoySH8o-cAADvnbTkCYw5nmMexN2_yrOBWiSkg9jsrHTO-VvGgyFz3rWrzih5bCMxvQFnB7LCRTekZn4fHEEeKK7mYLsP9KxcvBaIpf493QoSRK4nLEre2SqlxCAuKmtzR6jCNFMLgQbaoaad6ornoi_Ey2Xi9JjkEA-4aMcB2v4a0sLPZb9ijTnlnxVFkzpj6bSQep8OFTsn1mYof2BF4-m7p6RgoMEmeF0FRcuzDM4d_1UNpicXKW8TtMtlI0Yt_3ZYKhtaahtRfwaoRCgNdx-u8OTNF3uVfMo2zuvWUToWajcXRJ7KSVsXkTHu4tYeQd5SblFUhqF7sBoIB6B4sEGsOQJ50epzE6SYNcpyrLpRjv0wWoV5qok_2slekDUlrrOcHzaqIPARs'
-
-        //Oficial'
-
-         const accessToken ='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5YzE5MWJlYy03MGI1LTQ2Y2UtOWRjYy01NzQ3MWEwMzM2YjkiLCJqdGkiOiIyMWYxYmYzMWQ2ZTk0ZWVlMDAyOWIxMmI0Mzk1Y2FjZmVjMWNhYjE0Yzg1MjhkMWU1ODFiNDlhZjk2ZDcyNjFlNjk0YjFlMDhjMjIwNmQwMCIsImlhdCI6MTcxNjQ4ODAyOS4wNjkwNTIsIm5iZiI6MTcxNjQ4ODAyOS4wNjkwNTUsImV4cCI6MTc0ODAyNDAyOS4wNTg5NSwic3ViIjoiIiwic2NvcGVzIjpbIioiXX0.A_0uK1lANFJpEmWTuJyXi0Xqo08Ey98zMSH5-AghngxUUqMfYgpgljA-My3I5uCa1xaJTRmcwlOqakiPYW48KEeH9J7qnr7xV8di3JGQnFEUc3x3xdLEiLz8Fb6KGZou56jonsMGO9OzVMHf_M6cJ9U1HWibNyZpKFlGEx2owVJQslidWGkYnxSqAUWO_lQ5ewV-qH1hotzE6l_FoIikDRY72t3jn60CUxxRrjedUppEbRWQZ5aScPqbe1ouQmAbvu28eEjlRY97hs5KRtMKYY0m9Ks2OXd86TElaLy1BRLHRTDr4PoUqD_OLgFkLj6ikBU61TnvKnJpEMCkk1Gwf_XBBwZ1l1R5y0z8SoKzNe1swhqGbLBCbNfYbop1vCk31jyRnikBTHDDflVGKCdDw0_nPVVawpzWzXcbU1gLe29YqmlYb3_ClQJa6GG4TDY6xChrolYivyBl5J9T8oX_lAmWQAQykf2_B_QCzkEXzZLGyxy4IlpjVhtgJyJlebu6prrYhsC_pVM9xjruiY8-QU_spvFP4zgWN-DeiGa1dXDQif6ZxIlGXW3mVdHLif4UmQ-H_1VQsJ8jWfyavWX5L22K3eqU9F5voJiDmiXrkK1CcEOnj07u9qscLWns-o756krTDo4oQWOBtvVo5ZYbHRT-uqnjd96LTBpcFcvIHHw'
-          //Teste
-         // const url = 'https://api.staging.clubeparcerias.com.br/api-client/v1/offers';
-          //Oficial
-          const url = 'https://clubedevantagens.abepom.org.br/api-client/v1/offers';
-           const options = {
-             method: 'POST',
-             headers: {Accept: 'application/json', Authorization: accessToken}
-           };
-           options.body = formData;
-           const dataHoraAtual = getCurrentDateTime()
-          try {
-            console.log(' ===== ENVIANDO API ===== ')  
-            const response = await fetch(url, options);
-            const data = await response.json();            
-            const {id,slug} = data
-              console.log('ID GDS =>' + id_gds );
-              console.log('id Rede => ' + id);
-              console.log('slug =>' + slug);
-//                console.log(data);
-                //const connGuia = await connectToDatabaseGuia();
-             let erroRetorno =    JSON.stringify(data)
-             console.log('Retorno API =>' + erroRetorno)
-             if(erroRetorno.length > 250){
-              erroRetorno = erroRetorno.substring(0,248)
-            }
-
-                if(id  !== undefined){
-                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='`+id+`' , slug ='`+slug+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`' WHERE (id_gds = '`+id_gds+`')`
-                  const result = await guia.query(queryUpdate);
-                } else{
-                  const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro undefined' , slug ='`+erroRetorno+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`'  WHERE id_gds = `+id_gds
-                  const result = await guia.query(queryUpdate);
-                }                    
-
-          } catch (error) {
-            let erroFormat = error
-
-            if(error.length > 250){
-              erroFormat = error.substring(0,248)
-            }
-
-            const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro ' , slug ='`+erroFormat+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`' WHERE (id_gds = '`+id_gds+`')`
-            //const queryUpdate = 'SELECT TOP (50) id_grupo_area, fk_grupo, fk_cd_da_area FROM grupo_area'
-            const result = await guia.query(queryUpdate);
-            console.error('deu erro ==> ' + error);
-          }
-
-          console.log(' ======== IMPORTAÇÃO FINALIZADA  ======== ' )
+          //Envio para a API
+     envioAPI(id_gds,formData)
         
     })
 
@@ -336,12 +293,12 @@ export async function importarOdontologia(){
   console.log('Executado 01 => ' + now.toLocaleTimeString())
       
      
-  const filePath = 'C:/NODEJS/aulas/rede/img/file_300_250.jpg'
+  const filePath = 'C:/NODEJS/aulas/rede/img/clubedevantagens_odontologia_logoabepom.png'
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
  // const connAssocia = await connectToDatabaseAssoc();
       
-  const queryConv = `SELECT top 5 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online, tabela_procedimentos  FROM [guia_de_servico] WHERE (ativo = 1) AND (cod_dentista <> 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') OR (ativo = 1) AND (id_rede IS NULL) AND (nome_parceiro <> '') AND (Código_do_dentista = 0) `// and tabela_procedimentos = 1 `// and id_gds = '4512'`
+  const queryConv = `SELECT top 10 id_gds, nome_parceiro, site, ISNULL(desconto_em_folha, 0) as desconto_em_folha, descricao_desconto, desconto, descricao_desconto AS resume, ativo, GETDATE() AS start_date, ISNULL(todas_cidades, 0) AS type, caminho_logomarca, email, instagram, facebook, twitter,  ISNULL(atendimento_online, 0) as online, tabela_procedimentos  FROM [guia_de_servico] WHERE (ativo = 1) AND (cod_dentista <> 0) AND (id_rede IS NULL) AND (nome_parceiro <> '') OR (ativo = 1) AND (id_rede IS NULL) AND (nome_parceiro <> '') AND (Código_do_dentista <> 0) `// and tabela_procedimentos = 1 `// and id_gds = '4512'`
   //console.log(queryConv)
   const resultado = (await guia.query(queryConv)).recordset
 
@@ -423,11 +380,9 @@ export async function importarOdontologia(){
       }else{
         addToFormData(formData, 'type','local')
       }
-      if (desconto_em_folha) { 
-        addToFormData(formData, 'rescue_text','Apresente seu Cartão do Associado ABEPOM juntamente ao RG no local.')
-      }else{
-        addToFormData(formData, 'rescue_text','Apresente seu Cartão do Associado ABEPOM juntamente ao RG e solicite o desconto de ' + desconto + ' % com o pagamento no local.')
-      }
+
+      addToFormData(formData, 'rescue_text','Apresente seu Cartão do Associado ABEPOM juntamente ao RG no local.')
+      addToFormData(formData, 'voucher_content','Apresente seu Cartão do Associado ABEPOM juntamente ao RG no local.')
      
       formData.append('invert_location_filter','false')             
       addToFormData(formData, 'priority','255')
@@ -442,11 +397,12 @@ export async function importarOdontologia(){
       resultadoEsp.forEach(async(areaEspecialidade) => {
           const { tipo_especialidade, descricao_area, id_rede } = areaEspecialidade
           console.log('DEscrição Area  ==> ' + descricao_area)
-          const  especialidade = descricao_area.split("-")
-          
-          console.log('Especialidade ==> ' + especialidade[1] ) //especialidade(1))
-          palavrasChave.push(especialidade[1])
-          }
+          const  especialidade = descricao_area.split("-")         
+            if (especialidade[1] !== undefined){
+              console.log('Especialidade ==> ' + especialidade[1] ) //especialidade(1))
+              palavrasChave.push(especialidade[1])
+            }  
+        }
 
 
       )
@@ -460,9 +416,16 @@ export async function importarOdontologia(){
       }
 
         if (palavrasChave.length > 0) {
-         descricao += '<br><br><i>Confira algumas especialidades:</i>'
-         descricao += '<ul>'
+          if(palavrasChave.length > 1){
+            descricao += '<br><br><i>Especialidades:</i>'
+          }else{
+            descricao += '<br><br><i>Especialidade:</i>'
+
+          }
+
+          descricao += '<ul>'
         }
+
         for (const value of palavrasChave){
           descricao += '<li>' + value + '</li>'  
         }
@@ -535,66 +498,12 @@ export async function importarOdontologia(){
      addToFormData(formData, 'instagram_link',instagram)
      addToFormData(formData, 'facebook_link',facebook)
      addToFormData(formData, 'twitter_link',twitter)
-     addToFormData(formData, 'show_card','false')
+     //addToFormData(formData, 'show_card','false')
      addToFormData(formData, 'contact_email',email)
 
      //Envio para a API
-
-     //Teste
-     const accessToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5YmMyODU2MC03NDM0LTQ0MzctODk1MC0xMDkwNzhkZDA5M2IiLCJqdGkiOiJhOTY5MjA2ZTk0ZTcwMDMyOTAyZWM2NjgzMGQ1Mzk2NjM0MDExZGNhOWFkZGQ5NGM3ZDZlZDdlNGJhZDY2ZmFiNDk3MzVhYjFhNzQ1OGZkYyIsImlhdCI6MTcxNjU2ODM1MS43NDY1ODUsIm5iZiI6MTcxNjU2ODM1MS43NDY1OSwiZXhwIjoxNzQ4MTA0MzUxLjczNjk0LCJzdWIiOiIiLCJzY29wZXMiOlsiKiJdfQ.jr-TqLmITAbGsOo3km8lVMK9XDlKeobDpJJbkT3nI2gXYmP4qR8oRvl67CUcEBwiDFFVYyr0NLa2zlGeFjNUCiEGOF4VtxmeByDaTqyQlqXeA3IOU6UCwxUjO81bZxjaRIz2BiyEZnxqL96qFMre0Ckt-r8ZZlUq-Sag9L6DN5t5coB4wnPRWa-0eSZZjObUDdhFSPHMFduQ4N3VxQ5EM6T4erjXsV17sZRkww_0jRHS3U07qHZkZaiifleomzgk9eHqAVLhYuAWdX4Z0sgXTKelkxILOfoySH8o-cAADvnbTkCYw5nmMexN2_yrOBWiSkg9jsrHTO-VvGgyFz3rWrzih5bCMxvQFnB7LCRTekZn4fHEEeKK7mYLsP9KxcvBaIpf493QoSRK4nLEre2SqlxCAuKmtzR6jCNFMLgQbaoaad6ornoi_Ey2Xi9JjkEA-4aMcB2v4a0sLPZb9ijTnlnxVFkzpj6bSQep8OFTsn1mYof2BF4-m7p6RgoMEmeF0FRcuzDM4d_1UNpicXKW8TtMtlI0Yt_3ZYKhtaahtRfwaoRCgNdx-u8OTNF3uVfMo2zuvWUToWajcXRJ7KSVsXkTHu4tYeQd5SblFUhqF7sBoIB6B4sEGsOQJ50epzE6SYNcpyrLpRjv0wWoV5qok_2slekDUlrrOcHzaqIPARs'
-
-      //Oficial'
-
-       //const accessToken ='eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5YzE5MWJlYy03MGI1LTQ2Y2UtOWRjYy01NzQ3MWEwMzM2YjkiLCJqdGkiOiIyMWYxYmYzMWQ2ZTk0ZWVlMDAyOWIxMmI0Mzk1Y2FjZmVjMWNhYjE0Yzg1MjhkMWU1ODFiNDlhZjk2ZDcyNjFlNjk0YjFlMDhjMjIwNmQwMCIsImlhdCI6MTcxNjQ4ODAyOS4wNjkwNTIsIm5iZiI6MTcxNjQ4ODAyOS4wNjkwNTUsImV4cCI6MTc0ODAyNDAyOS4wNTg5NSwic3ViIjoiIiwic2NvcGVzIjpbIioiXX0.A_0uK1lANFJpEmWTuJyXi0Xqo08Ey98zMSH5-AghngxUUqMfYgpgljA-My3I5uCa1xaJTRmcwlOqakiPYW48KEeH9J7qnr7xV8di3JGQnFEUc3x3xdLEiLz8Fb6KGZou56jonsMGO9OzVMHf_M6cJ9U1HWibNyZpKFlGEx2owVJQslidWGkYnxSqAUWO_lQ5ewV-qH1hotzE6l_FoIikDRY72t3jn60CUxxRrjedUppEbRWQZ5aScPqbe1ouQmAbvu28eEjlRY97hs5KRtMKYY0m9Ks2OXd86TElaLy1BRLHRTDr4PoUqD_OLgFkLj6ikBU61TnvKnJpEMCkk1Gwf_XBBwZ1l1R5y0z8SoKzNe1swhqGbLBCbNfYbop1vCk31jyRnikBTHDDflVGKCdDw0_nPVVawpzWzXcbU1gLe29YqmlYb3_ClQJa6GG4TDY6xChrolYivyBl5J9T8oX_lAmWQAQykf2_B_QCzkEXzZLGyxy4IlpjVhtgJyJlebu6prrYhsC_pVM9xjruiY8-QU_spvFP4zgWN-DeiGa1dXDQif6ZxIlGXW3mVdHLif4UmQ-H_1VQsJ8jWfyavWX5L22K3eqU9F5voJiDmiXrkK1CcEOnj07u9qscLWns-o756krTDo4oQWOBtvVo5ZYbHRT-uqnjd96LTBpcFcvIHHw'
-        //Teste
-        const url = 'https://api.staging.clubeparcerias.com.br/api-client/v1/offers';
-        //Oficial
-       // const url = 'https://clubedevantagens.abepom.org.br/api-client/v1/offers';
-         const options = {
-           method: 'POST',
-           headers: {Accept: 'application/json', Authorization: accessToken}
-         };
-         options.body = formData;
-         const dataHoraAtual = getCurrentDateTime()
-        try {
-          console.log(' ===== ENVIANDO API ===== ')  
-          const response = await fetch(url, options);
-          const data = await response.json();            
-          const {id,slug} = data
-            console.log('ID GDS =>' + id_gds );
-            console.log('id Rede => ' + id);
-            console.log('slug =>' + slug);
-//                console.log(data);
-              //const connGuia = await connectToDatabaseGuia();
-           let erroRetorno =    JSON.stringify(data)
-           console.log('Retorno API =>' + erroRetorno)
-           if(erroRetorno.length > 250){
-            erroRetorno = erroRetorno.substring(0,248)
-          }
-
-              if(id  !== undefined){
-                const queryUpdate = `UPDATE guia_de_servico SET id_rede ='`+id+`' , slug ='`+slug+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`' WHERE (id_gds = '`+id_gds+`')`
-                const result = await guia.query(queryUpdate);
-              } else{
-                const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro undefined' , slug ='`+erroRetorno+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`'  WHERE id_gds = `+id_gds
-                const result = await guia.query(queryUpdate);
-              }                    
-
-         } catch (error) {
-//           let erroFormat = error
-
-//           if(error.length > 250){
-//             erroFormat = error.substring(0,248)
-//           }
-
-//           const queryUpdate = `UPDATE guia_de_servico SET id_rede ='Erro ' , slug ='`+erroFormat+`', data_envio_rede ='`+dataHoraAtual+`' , data_alteracao_rede ='`+dataHoraAtual+`' WHERE (id_gds = '`+id_gds+`')`
-//           //const queryUpdate = 'SELECT TOP (50) id_grupo_area, fk_grupo, fk_cd_da_area FROM grupo_area'
-//           const result = await guia.query(queryUpdate);
-//           console.error('deu erro ==> ' + error);
-         }
-
-        console.log(' ======== FIM ENVIO API  ======== ' )
-      
+     envioAPI(id_gds,formData)
+    
   })
 
           
