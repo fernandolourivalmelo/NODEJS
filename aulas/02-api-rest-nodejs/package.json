@@ -26,13 +26,12 @@
     "tsx": "^4.10.0",
     "typescript": "^5.4.5",
     "vitest": "^2.0.5",
-    "sqlite3": "^5.1.7"
-
+    "sqlite3": "^5.1.7",
+    "cli": "^1.0.1"
   },
   "dependencies": {
     "@fastify/cookie": "^9.3.1",
-    "cli": "^1.0.1",
-    "dotenv": "^16.4.5",
+       "dotenv": "^16.4.5",
     "fastify": "^4.27.0",
     "git": "^0.1.5",
     "knex": "^3.1.0",
